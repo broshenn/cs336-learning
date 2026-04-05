@@ -3,8 +3,9 @@
 All changes we make to the assignment code or PDF will be documented in this file.
 
 ## [26.0.1] 2026-04-05
-- handout: Fix typos, broken links
+- handout: Fix a few typos, broken links
 - code: Fix some references to H100s in favor of B200
+- code: Fixture for AdamW updated to cover bugfix from 26.0.0 (should not have caused an issue previously regardless)
 
 ## [26.0.0] 2026-03-30
 - handout: Latex -> Typst (!)
