@@ -89,14 +89,25 @@ class RotaryPositionalEmbedding(nn.Module):
         self.d_k=d_k
         self.max_seq_len=max_seq_len
         self.device=device
-        self.cos,self.sin=precompute_freqs_cis(self.d_k,self.max_seq_len,self.theta)
+        cos, sin = precompute_freqs_cis(self.d_k, self.max_seq_len, self.theta)
+        self.register_buffer("cos", cos.to(device=device), persistent=False)
+        self.register_buffer("sin", sin.to(device=device), persistent=False)
 
     def forward(self, x, token_positions=None):
         seq_len = x.shape[-2]
-        batch = x.shape[0]
-        positions=token_positions
-        cos = self.cos[positions]
-        sin = self.sin[positions]
+        if token_positions is None:
+            cos = self.cos[:seq_len]
+            sin = self.sin[:seq_len]
+            while cos.ndim < x.ndim:
+                cos = cos.unsqueeze(0)
+                sin = sin.unsqueeze(0)
+        else:
+            positions = token_positions.to(device=x.device)
+            cos = self.cos[positions]
+            sin = self.sin[positions]
+            while cos.ndim < x.ndim:
+                cos = cos.unsqueeze(-3)
+                sin = sin.unsqueeze(-3)
         return apply_rotary_positional_embedding(x, cos, sin)
 #
 #
@@ -172,7 +183,7 @@ class TransformerBlock(nn.Module):
     def forward(self,x, token_positions=None):
         batch_size,seq_len,d_model=x.shape
         if token_positions is None:
-            token_positions=torch.arange(0, seq_len).expand(batch_size, seq_len)
+            token_positions=torch.arange(0, seq_len, device=x.device).expand(batch_size, seq_len)
         x=x+self.attn(self.ln1(x), token_positions=token_positions)
         x=x+self.ffn(self.ln2(x))
         return x

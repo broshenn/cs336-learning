@@ -478,6 +478,8 @@ def run_get_batch(
         shape 为 (batch_size, context_length) 的 torch.LongTensors 元组。
         第一个是采样的输入序列，第二个是对应的语言建模标签。
     """
+    from cs336_basics.training import get_batch
+    return get_batch(dataset, batch_size, context_length, device)
     raise NotImplementedError
 
 
@@ -535,6 +537,8 @@ def get_adamw_cls() -> Any:
     """
     返回一个实现了 AdamW 的 torch.optim.Optimizer。
     """
+    from cs336_basics.training import AdamW
+    return AdamW
     raise NotImplementedError
 
 
@@ -559,6 +563,10 @@ def run_get_lr_cosine_schedule(
     返回:
         指定迭代下该计划的学习率。
     """
+    from cs336_basics.training import get_lr_cosine_schedule
+    return get_lr_cosine_schedule(
+        it, max_learning_rate, min_learning_rate, warmup_iters, cosine_cycle_iters
+    )
     raise NotImplementedError
 
 
@@ -577,6 +585,8 @@ def run_save_checkpoint(
         iteration (int): 要序列化的值，表示已完成的训练迭代数。
         out (str | os.PathLike | BinaryIO | IO[bytes]): 序列化模型、优化器和迭代的目标路径或文件对象。
     """
+    from cs336_basics.training import save_checkpoint
+    return save_checkpoint(model, optimizer, iteration, out)
     raise NotImplementedError
 
 
@@ -597,6 +607,8 @@ def run_load_checkpoint(
     返回:
         int: 之前序列化的迭代次数。
     """
+    from cs336_basics.training import load_checkpoint
+    return load_checkpoint(src, model, optimizer)
     raise NotImplementedError
 
 

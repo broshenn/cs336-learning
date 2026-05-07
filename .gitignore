@@ -161,3 +161,23 @@ cython_debug/
 
 .ruff_cache/
 *.zipdata/
+
+# Local datasets and training artifacts
+data/
+out/
+runs/
+checkpoints/
+wandb/
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.pkl
+*.npz
+*.npy
+*.gz
+
+# Keep this learning repository light; fetch official large fixtures separately if needed.
+tests/_snapshots/
+tests/fixtures/tinystories_sample_5M.txt
+tests/fixtures/ts_tests/

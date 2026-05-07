@@ -8,6 +8,7 @@ import os
 import regex as re
 
 PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+_PAT_RE = re.compile(PAT)
 
 
 def _special_pattern(special_tokens: list[str]) -> str | None:
@@ -101,6 +102,13 @@ class Tokenizer:
         self.token_to_id = {v: k for k, v in self.vocab.items()}
         self.merge_rank = {pair: i for i, pair in enumerate(self.merges)}
         self.special_to_id = {tok: self.token_to_id[tok.encode("utf-8")] for tok in self.special_tokens}
+        self._special_split_re = (
+            re.compile("(" + "|".join(re.escape(s) for s in self.special_tokens) + ")")
+            if self.special_tokens
+            else None
+        )
+        self._encode_cache: dict[bytes, tuple[int, ...]] = {}
+        self._encode_cache_max_size = 200_000
 
     @classmethod
     def from_files(cls, vocab_filepath, merges_filepath, special_tokens=None):
@@ -136,19 +144,28 @@ class Tokenizer:
             tokens = tokens[:i] + [tokens[i] + tokens[i + 1]] + tokens[i + 2 :]
         return tokens
 
+    def _encode_pretoken(self, bs: bytes) -> tuple[int, ...]:
+        cached = self._encode_cache.get(bs)
+        if cached is not None:
+            return cached
+
+        ids = tuple(self.token_to_id[tok] for tok in self._apply_bpe(bs))
+        if len(self._encode_cache) >= self._encode_cache_max_size:
+            self._encode_cache.clear()
+        self._encode_cache[bs] = ids
+        return ids
+
     def _encode_regular(self, text: str) -> list[int]:
         ids = []
-        for match in re.finditer(PAT, text):
-            for tok in self._apply_bpe(match.group(0).encode("utf-8")):
-                ids.append(self.token_to_id[tok])
+        for match in _PAT_RE.finditer(text):
+            ids.extend(self._encode_pretoken(match.group(0).encode("utf-8")))
         return ids
 
     def encode(self, text: str) -> list[int]:
         if not self.special_tokens:
             return self._encode_regular(text)
-        pattern = "(" + "|".join(re.escape(s) for s in self.special_tokens) + ")"
         ids = []
-        for part in re.split(pattern, text):
+        for part in self._special_split_re.split(text):
             if part == "":
                 continue
             if part in self.special_to_id:
